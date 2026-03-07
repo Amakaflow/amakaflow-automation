@@ -261,4 +261,89 @@ export class LinearClient {
       { issueId, body }
     );
   }
+
+  /**
+   * Fetch the most recent comment on a ticket containing a structured failure block.
+   * Returns parsed failure context, or null if no such comment is found.
+   */
+  async getLatestFailureComment(ticketId: string): Promise<{
+    failedStep: string;
+    branchName: string;
+    runUrl: string;
+    retryCount: number;
+    fullCommentBody: string;
+  } | null> {
+    let data: {
+      issue: {
+        comments: {
+          nodes: Array<{ body: string; createdAt: string }>;
+        };
+      };
+    };
+
+    try {
+      data = await this.query<{
+        issue: {
+          comments: {
+            nodes: Array<{ body: string; createdAt: string }>;
+          };
+        };
+      }>(
+        `query($id: String!) {
+          issue(id: $id) {
+            comments(
+              first: 10
+              orderBy: createdAt
+            ) {
+              nodes {
+                body
+                createdAt
+              }
+            }
+          }
+        }`,
+        { id: ticketId }
+      );
+    } catch {
+      return null;
+    }
+
+    // Comments come back oldest-first from Linear; reverse to get newest first
+    const comments = [...data.issue.comments.nodes].reverse();
+
+    for (const comment of comments) {
+      if (!comment.body.includes("FAILURE_CONTEXT_START")) continue;
+
+      // Extract content between markers
+      const match = comment.body.match(
+        /FAILURE_CONTEXT_START\n([\s\S]*?)\nFAILURE_CONTEXT_END/
+      );
+      if (!match) continue;
+
+      const block = match[1];
+      const parsed: Record<string, string> = {};
+      for (const line of block.split("\n")) {
+        const colonIdx = line.indexOf(":");
+        if (colonIdx === -1) continue;
+        const key = line.slice(0, colonIdx).trim();
+        const value = line.slice(colonIdx + 1).trim();
+        parsed[key] = value;
+      }
+
+      const failedStep = parsed["failed_step"] ?? "";
+      const branchName = parsed["branch_name"] ?? "";
+      const runUrl = parsed["run_url"] ?? "";
+      const retryCount = parseInt(parsed["retry_count"] ?? "0", 10);
+
+      return {
+        failedStep,
+        branchName,
+        runUrl,
+        retryCount: isNaN(retryCount) ? 0 : retryCount,
+        fullCommentBody: comment.body,
+      };
+    }
+
+    return null;
+  }
 }

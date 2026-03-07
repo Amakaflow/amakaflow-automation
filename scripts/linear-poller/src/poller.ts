@@ -133,11 +133,40 @@ async function dispatchTicket(issue: ReadyIssue): Promise<void> {
   // Record in state (Scenario 14: prevents duplicate dispatch)
   state.startJob(issue.id, issue.identifier, issue.title);
 
-  // Build task prompt
-  const task = buildTaskPrompt(issue);
+  // Check for a prior failure comment to build retry context
+  const failureComment = await linear.getLatestFailureComment(issue.id);
+  if (failureComment) {
+    log.info(tag, `Found failure context from previous attempt (retry ${failureComment.retryCount}) — appending to prompt`);
+    state.recordFailureCategory(failureComment.failedStep);
+  }
+
+  // Build task prompt (with optional retry context)
+  const baseTask = buildTaskPrompt(issue);
+  let task = baseTask;
+  if (failureComment) {
+    // Extract the human-readable log section (between the ``` fences, before the HTML comment)
+    const logsMatch = failureComment.fullCommentBody.match(/```\n([\s\S]*?)\n```/);
+    const failureLogs = logsMatch ? logsMatch[1].slice(-2000) : "";
+    task = [
+      baseTask,
+      "",
+      "---",
+      `PREVIOUS ATTEMPT FAILED (attempt ${failureComment.retryCount}):`,
+      `Step that failed: ${failureComment.failedStep}`,
+      `Existing branch: ${failureComment.branchName} — IMPORTANT: Check out this existing branch and make targeted fixes. Do not create a new branch.`,
+      `CI run: ${failureComment.runUrl}`,
+      "",
+      "What went wrong:",
+      failureLogs,
+      "---",
+      "Please fix the specific issues above. Make targeted changes only — do not rewrite working code.",
+    ].join("\n");
+  }
+
   log.info(tag, `Dispatching antfarm workflow "${config.antfarmWorkflow}"`, {
     titleLength: issue.title.length,
     descLength: issue.description.length,
+    isRetry: failureComment !== null,
   });
 
   if (config.dryRun) {
@@ -154,10 +183,20 @@ async function dispatchTicket(issue: ReadyIssue): Promise<void> {
   // Post-execution: verify ticket state before updating (Scenario 10, 11)
   const postExec = await linear.fetchIssue(issue.id);
 
+  // Increment totalAttempts metric now that dispatch has run
+  state.incrementTotalAttempts();
+
   if (result.success) {
     // --- SUCCESS ---
     log.info(tag, `Workflow succeeded in ${Math.round(result.durationMs / 1000)}s`);
     state.finishJob("succeeded", undefined, result.runId ?? undefined);
+
+    // Metrics: first-pass vs self-heal
+    if (failureComment) {
+      state.incrementSelfHealSuccesses();
+    } else {
+      state.incrementFirstPassSuccesses();
+    }
 
     if (!postExec) {
       log.warn(tag, "Could not re-fetch issue after success — leaving as-is");
@@ -235,6 +274,7 @@ async function dispatchTicket(issue: ReadyIssue): Promise<void> {
       }
     } else {
       log.warn(tag, `Max retries (${config.maxRetries}) exceeded — leaving in current state`);
+      state.incrementHumanInterventions();
       await linear.addComment(
         issue.id,
         `⛔ **Max retries exceeded** (${config.maxRetries}). This ticket needs manual attention.`
@@ -301,7 +341,7 @@ async function pollOnce(): Promise<void> {
 // Status command
 // ---------------------------------------------------------------------------
 function showStatus(): void {
-  const { current, recent, retries } = state.getStatus();
+  const { current, recent, retries, metrics } = state.getStatus();
 
   console.log("\n=== Linear-Antfarm Poller Status ===\n");
 
@@ -330,6 +370,18 @@ function showStatus(): void {
         : "—";
       console.log(`  ${job.identifier} [${job.status}] ${duration} — ${job.title}`);
       if (job.errorMessage) console.log(`    Error: ${job.errorMessage}`);
+    }
+  }
+
+  console.log("\nMetrics:");
+  console.log(`  Total attempts:        ${metrics.totalAttempts}`);
+  console.log(`  First-pass successes:  ${metrics.firstPassSuccesses}`);
+  console.log(`  Self-heal successes:   ${metrics.selfHealSuccesses}`);
+  console.log(`  Human interventions:   ${metrics.humanInterventions}`);
+  if (Object.keys(metrics.failureCategories).length > 0) {
+    console.log("  Failure categories:");
+    for (const [step, count] of Object.entries(metrics.failureCategories)) {
+      console.log(`    ${step}: ${count}`);
     }
   }
 

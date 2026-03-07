@@ -10,7 +10,7 @@
 
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import type { PollerState, JobRecord } from "./state.js";
+import type { PollerState, JobRecord, Metrics } from "./state.js";
 
 const stateFile = process.env.STATE_FILE || "./poller-state.json";
 const reportDir = join(process.env.HOME || "~", ".openclaw", "reports");
@@ -22,6 +22,33 @@ function loadState(): PollerState | null {
   } catch {
     return null;
   }
+}
+
+function formatMetrics(metrics: Metrics): string[] {
+  const lines: string[] = [
+    "## Self-Healing Metrics",
+    "",
+    `| Metric | Count |`,
+    `|--------|-------|`,
+    `| Total attempts | ${metrics.totalAttempts} |`,
+    `| First-pass successes | ${metrics.firstPassSuccesses} |`,
+    `| Self-heal successes | ${metrics.selfHealSuccesses} |`,
+    `| Human interventions | ${metrics.humanInterventions} |`,
+    "",
+  ];
+
+  const categories = Object.entries(metrics.failureCategories);
+  if (categories.length > 0) {
+    lines.push("### Failure Categories", "");
+    lines.push(`| Step | Count |`);
+    lines.push(`|------|-------|`);
+    for (const [step, count] of categories.sort((a, b) => b[1] - a[1])) {
+      lines.push(`| ${step} | ${count} |`);
+    }
+    lines.push("");
+  }
+
+  return lines;
 }
 
 function generateReport(state: PollerState): string {
@@ -95,6 +122,16 @@ function generateReport(state: PollerState): string {
     }
     lines.push("");
   }
+
+  // Self-healing metrics
+  const metricsToReport = state.metrics ?? {
+    totalAttempts: 0,
+    firstPassSuccesses: 0,
+    selfHealSuccesses: 0,
+    humanInterventions: 0,
+    failureCategories: {},
+  };
+  lines.push(...formatMetrics(metricsToReport));
 
   // Retry tracker
   const retriesEntries = Object.entries(state.retryTracker);

@@ -9,13 +9,38 @@
     "dry-run": "tsx src/poller.ts --dry-run",
     "status": "tsx src/poller.ts --status",
     "report": "tsx src/report.ts",
-    "report:save": "tsx src/report.ts --write"
+    "report:save": "tsx src/report.ts --write",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "build": "tsc --noEmit"
   },
   "dependencies": {
     "tsx": "^4.19.0"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.14",
     "@types/node": "^25.2.3",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.3.4",
     "typescript": "^5.9.3"
+  },
+  "jest": {
+    "preset": "ts-jest/presets/default-esm",
+    "testEnvironment": "node",
+    "extensionsToTreatAsEsm": [".ts"],
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    },
+    "transform": {
+      "^.+\\.tsx?$": [
+        "ts-jest",
+        {
+          "useESM": true,
+          "tsconfig": {
+            "module": "ESNext",
+            "moduleResolution": "bundler"
+          }
+        }
+      ]
+    }
   }
 }

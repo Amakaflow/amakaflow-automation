@@ -35,6 +35,10 @@ inputs:
     description: 'Validation phase: "a" (build/test/lint) or "b" (adds eval checks). Reserved for future use.'
     required: false
     default: 'a'
+  git-diff-summary:
+    description: 'Short summary of what the AI changed (git diff --stat output)'
+    required: false
+    default: ''
 
 outputs:
   pr-url:
@@ -221,22 +225,40 @@ runs:
         FAILURE_LOGS: ${{ inputs.failure-logs }}
         NEXT_RETRY: ${{ steps.retry-count.outputs.next }}
         MAX_RETRIES: ${{ inputs.max-retries }}
+        GIT_DIFF_SUMMARY: ${{ inputs.git-diff-summary }}
       run: |
-        # Truncate logs to 2000 chars
-        TRUNCATED_LOGS="${FAILURE_LOGS:0:2000}"
-        if [ ${#FAILURE_LOGS} -gt 2000 ]; then
+        # Truncate logs to 4000 chars
+        TRUNCATED_LOGS="${FAILURE_LOGS:0:4000}"
+        if [ ${#FAILURE_LOGS} -gt 4000 ]; then
           TRUNCATED_LOGS="${TRUNCATED_LOGS}... (truncated)"
+        fi
+
+        BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+        RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+        # Build optional diff summary section
+        DIFF_SECTION=""
+        if [ -n "$GIT_DIFF_SUMMARY" ]; then
+          DIFF_SECTION=$(printf "\nDiff summary:\n\`\`\`\n%s\n\`\`\`" "$GIT_DIFF_SUMMARY")
         fi
 
         BODY=$(cat <<EOF
         **CI failed** on \`$REPO_NAME\` — step: \`$FAILED_STEP\`
         [retry:$NEXT_RETRY/$MAX_RETRIES]
 
-        [View run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+        [View run]($RUN_URL)
 
         \`\`\`
         $TRUNCATED_LOGS
         \`\`\`
+        $DIFF_SECTION
+
+        <!-- FAILURE_CONTEXT_START
+        failed_step: $FAILED_STEP
+        branch_name: $BRANCH
+        run_url: $RUN_URL
+        retry_count: $NEXT_RETRY
+        FAILURE_CONTEXT_END -->
         EOF
         )
 
@@ -272,10 +294,20 @@ runs:
         FAILURE_LOGS: ${{ inputs.failure-logs }}
         NEXT_RETRY: ${{ steps.retry-count.outputs.next }}
         MAX_RETRIES: ${{ inputs.max-retries }}
+        GIT_DIFF_SUMMARY: ${{ inputs.git-diff-summary }}
       run: |
-        TRUNCATED_LOGS="${FAILURE_LOGS:0:2000}"
-        if [ ${#FAILURE_LOGS} -gt 2000 ]; then
+        TRUNCATED_LOGS="${FAILURE_LOGS:0:4000}"
+        if [ ${#FAILURE_LOGS} -gt 4000 ]; then
           TRUNCATED_LOGS="${TRUNCATED_LOGS}... (truncated)"
+        fi
+
+        BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+        RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+        # Build optional diff summary section
+        DIFF_SECTION=""
+        if [ -n "$GIT_DIFF_SUMMARY" ]; then
+          DIFF_SECTION=$(printf "\nDiff summary:\n\`\`\`\n%s\n\`\`\`" "$GIT_DIFF_SUMMARY")
         fi
 
         BODY=$(cat <<EOF
@@ -284,11 +316,19 @@ runs:
 
         **Max retries ($MAX_RETRIES) exceeded. Moving to Backlog for human attention.**
 
-        [View run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+        [View run]($RUN_URL)
 
         \`\`\`
         $TRUNCATED_LOGS
         \`\`\`
+        $DIFF_SECTION
+
+        <!-- FAILURE_CONTEXT_START
+        failed_step: $FAILED_STEP
+        branch_name: $BRANCH
+        run_url: $RUN_URL
+        retry_count: $NEXT_RETRY
+        FAILURE_CONTEXT_END -->
         EOF
         )
 
