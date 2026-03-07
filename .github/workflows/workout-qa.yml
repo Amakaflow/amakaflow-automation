@@ -21,8 +21,6 @@ name: Workout Import QA
 #   INTERNAL_API_KEY          - Internal service-to-service auth key
 
 on:
-  schedule:
-    - cron: '0 6 * * *'  # 06:00 UTC nightly
   workflow_dispatch:       # Manual trigger from GitHub UI
     inputs:
       platform:

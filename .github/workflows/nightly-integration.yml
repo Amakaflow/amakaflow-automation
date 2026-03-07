@@ -11,8 +11,6 @@ name: Nightly Cross-Repo Integration Suite
 #   TELEGRAM_BOT_TOKEN        - Telegram bot token for delivery
 
 on:
-  schedule:
-    - cron: '0 5 * * *'   # 5 AM UTC daily
   workflow_dispatch:        # Manual trigger from GitHub UI
 
 jobs:
