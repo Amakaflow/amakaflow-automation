@@ -39,7 +39,7 @@ LINEAR_API_KEY = os.environ["LINEAR_API_KEY"]
 
 SENTRY_ORG = os.environ.get("SENTRY_ORG", "me-6o")
 SENTRY_PROJECTS = [p.strip() for p in os.environ.get("SENTRY_PROJECTS", "").split(",") if p.strip()]
-LINEAR_TEAM_ID = os.environ.get("LINEAR_TEAM_ID", "6c2d1065-85ae-4402-b8ac-64b8530dd663")
+LINEAR_TEAM_ID = os.environ.get("LINEAR_TEAM_ID") or "6c2d1065-85ae-4402-b8ac-64b8530dd663"
 STATE_FILE = Path(os.environ.get("STATE_FILE", "/tmp/sentry_sync_state.json"))
 LOOKBACK_HOURS = int(os.environ.get("LOOKBACK_HOURS", "6"))
 MIN_USERS_HANG = int(os.environ.get("MIN_USERS_HANG", "3"))
@@ -270,7 +270,7 @@ def create_linear_ticket(issue: dict) -> Optional[str]:
             }
         },
     )
-    return data.get("data", {}).get("issueCreate", {}).get("issue", {}).get("url")
+    return (data.get("data") or {}).get("issueCreate", {}).get("issue", {}).get("url")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
