@@ -1,0 +1,74 @@
+name: Sentry -> Linear Issue Sync
+
+# Auto-creates Linear tickets for new/regressed Sentry issues.
+# Runs every 4 hours. No human action required.
+#
+# Required secrets (set in this repo):
+#   SENTRY_AUTH_TOKEN   Sentry auth token — scopes: org:read, project:read, event:read
+#   LINEAR_API_KEY      Linear API key (no Bearer prefix)
+#
+# Optional secrets (sensible defaults used if absent):
+#   SENTRY_ORG          Sentry org slug (default: me-6o)
+#   SENTRY_PROJECTS     Comma-separated project slugs to filter (default: all projects)
+#   LINEAR_TEAM_ID      Linear team UUID (default: AmakaFlow team)
+
+on:
+  schedule:
+    - cron: '0 */4 * * *'   # Every 4 hours
+  workflow_dispatch:          # Manual trigger for testing
+    inputs:
+      lookback_hours:
+        description: 'How many hours back to look (default: 6)'
+        required: false
+        default: '6'
+      dry_run:
+        description: 'Dry run — print what would be created without creating'
+        required: false
+        default: 'false'
+
+jobs:
+  sync:
+    name: Sync Sentry issues to Linear
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Restore state from previous run so we never create duplicates
+      - name: Restore sync state
+        uses: actions/cache@v4
+        with:
+          path: /tmp/sentry_sync_state.json
+          key: sentry-linear-state-${{ github.run_id }}
+          restore-keys: |
+            sentry-linear-state-
+
+      - name: Run sync
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG || 'me-6o' }}
+          SENTRY_PROJECTS: ${{ secrets.SENTRY_PROJECTS }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_ID: ${{ secrets.LINEAR_TEAM_ID }}
+          STATE_FILE: /tmp/sentry_sync_state.json
+          LOOKBACK_HOURS: ${{ github.event.inputs.lookback_hours || '6' }}
+          MIN_USERS_HANG: '3'
+          MIN_USERS_NEW_ERROR: '2'
+        run: python scripts/sentry_to_linear.py
+
+      - name: Notify Telegram on failure
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          MSG="Sentry->Linear sync FAILED%0ARun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=7888191549" \
+            --data "text=${MSG}"
