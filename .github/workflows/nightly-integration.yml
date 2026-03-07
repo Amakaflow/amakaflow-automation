@@ -1,0 +1,131 @@
+name: Nightly Cross-Repo Integration Suite
+
+# Required secrets (must match those set in this repo):
+#   GH_PAT                    - GitHub PAT to checkout private repos
+#   ANTHROPIC_API_KEY         - Anthropic key (for app services)
+#   SUPABASE_URL              - Supabase project URL
+#   SUPABASE_ANON_KEY         - Supabase anon key
+#   SUPABASE_SERVICE_ROLE_KEY - Supabase service role key
+#   CLERK_SECRET_KEY          - Clerk secret key
+#   TEST_AUTH_SECRET          - Shared test auth bypass secret
+#   TELEGRAM_BOT_TOKEN        - Telegram bot token for delivery
+
+on:
+  schedule:
+    - cron: '0 5 * * *'   # 5 AM UTC daily
+  workflow_dispatch:        # Manual trigger from GitHub UI
+
+jobs:
+  integration:
+    name: Full Stack Integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout automation repo
+        uses: actions/checkout@v4
+
+      - name: Checkout amakaflow-backend
+        uses: actions/checkout@v4
+        with:
+          repository: Amakaflow/amakaflow-backend
+          token: ${{ secrets.GH_PAT }}
+          path: amakaflow-backend
+
+      - name: Checkout amakaflow-dev-workspace
+        uses: actions/checkout@v4
+        with:
+          repository: supergeri/amakaflow-dev-workspace
+          token: ${{ secrets.GH_PAT }}
+          path: amakaflow-dev-workspace
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: amakaflow-backend/package-lock.json
+
+      - name: Install smoke test dependencies
+        working-directory: amakaflow-backend
+        run: npm ci
+
+      - name: Write .env for docker compose
+        working-directory: amakaflow-dev-workspace
+        run: |
+          cat > .env <<'EOF'
+          ENVIRONMENT=development
+          ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}
+          TEST_AUTH_SECRET=${{ secrets.TEST_AUTH_SECRET }}
+          BYPASS_TIER_GATE=true
+          RATE_LIMIT_FREE=999999
+          EOF
+
+      - name: Start chat-api
+        working-directory: amakaflow-dev-workspace
+        run: |
+          docker compose up -d chat
+          for i in $(seq 1 12); do
+            if curl -sf http://localhost:8005/health > /dev/null 2>&1; then
+              echo "chat-api ready after ${i}x5s"
+              break
+            fi
+            echo "Waiting for chat-api... ($i/12)"
+            sleep 5
+          done
+          curl -sf http://localhost:8005/health || (echo "chat-api failed to start" && docker compose logs chat && exit 1)
+
+      - name: Start AI import service
+        working-directory: amakaflow-backend/services/workout-ingestor-api
+        run: |
+          pip install -r requirements.txt
+          python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          for i in $(seq 1 6); do
+            if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
+              echo "ai-import ready"
+              break
+            fi
+            sleep 3
+          done
+          curl -sf http://localhost:8000/health || (echo "ai-import failed to start" && exit 1)
+
+      - name: Run full smoke suite
+        working-directory: amakaflow-backend
+        env:
+          SMOKE_CHAT_URL: http://localhost:8005
+          SMOKE_AI_URL: http://localhost:8000
+          TEST_AUTH_SECRET: ${{ secrets.TEST_AUTH_SECRET }}
+          TEST_USER_ID: dev-user
+        run: bash scripts/smoke/run-all.sh
+
+      - name: Upload smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-results-${{ github.run_id }}
+          path: /tmp/smoke/
+          retention-days: 14
+
+      - name: Notify Telegram on failure
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          MSG="Nightly Integration Suite FAILED%0A%0ARun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}%0A%0ACheck artifacts for smoke test details."
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=7888191549" \
+            --data "text=${MSG}"
+
+      - name: Notify Telegram on success
+        if: success()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          MSG="Nightly Integration Suite passed%0A%0ARun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=7888191549" \
+            --data "text=${MSG}"
