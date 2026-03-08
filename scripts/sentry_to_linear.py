@@ -154,12 +154,11 @@ def should_create_ticket(issue: dict, state: dict) -> tuple[bool, str]:
     if status == "regressed":
         return True, ""
 
-    # App Hangs / ANRs: only if enough real users affected
+    # App Hangs / ANRs: suppressed until AMA-971 (Keychain main-thread block) ships.
+    # Re-enable by removing this early return once the fix is confirmed in production.
     is_hang = any(kw in title for kw in ("app hang", "anr", "application not responding", "app hanging"))
     if is_hang:
-        if user_count < MIN_USERS_HANG:
-            return False, f"hang only {user_count} users (min {MIN_USERS_HANG})"
-        return True, ""
+        return False, "app hang suppressed pending AMA-971 fix"
 
     # New errors: must affect at least MIN_USERS_NEW_ERROR real users
     if user_count < MIN_USERS_NEW_ERROR:
