@@ -1,0 +1,89 @@
+# iOS Coach Chat Flow
+# Tests coach tab: suggested prompts, tap prompt, verify response, source chips, rate limit
+#
+# Run: maestro test flows/ios/coach-chat.yaml
+
+appId: com.myamaka.AmakaFlowCompanion
+
+onFlowError:
+  - takeScreenshot: artifacts/screenshots/ios-coach-chat-error
+
+---
+
+- launchApp:
+    clearState: true
+    stopApp: true
+    arguments:
+      UITEST_MODE: "true"
+      UITEST_AUTH_SECRET: "${UITEST_AUTH_SECRET}"
+      UITEST_USER_ID: "${UITEST_USER_ID:-test-user-123}"
+      UITEST_USE_FIXTURES: "true"
+      UITEST_FIXTURES: "amrap_10min,strength_block_w1"
+      UITEST_SKIP_ONBOARDING: "true"
+      UITEST_SKIP_APPLE_WATCH: "true"
+
+- extendedWaitUntil:
+    visible:
+      id: "home_screen"
+    timeout: 15000
+
+# Navigate to Coach tab
+- tapOn:
+    id: "coach_tab"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "coach_screen"
+    timeout: 10000
+
+- takeScreenshot: artifacts/screenshots/ios-coach-chat-01-coach-screen
+
+# ============================================
+# Verify suggested prompts are visible
+# ============================================
+
+- assertVisible:
+    id: "suggested_prompts_section"
+
+- takeScreenshot: artifacts/screenshots/ios-coach-chat-02-suggested-prompts
+
+# Tap a suggested prompt
+- tapOn:
+    id: "suggested_prompt_0"
+    retryTapIfNoChange: true
+
+# Wait for response to appear
+- extendedWaitUntil:
+    visible:
+      id: "coach_response_bubble"
+    timeout: 30000
+
+- takeScreenshot: artifacts/screenshots/ios-coach-chat-03-response
+
+# ============================================
+# Verify source chips
+# ============================================
+
+- assertVisible:
+    id: "source_chips_section"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/ios-coach-chat-04-source-chips
+
+# ============================================
+# Verify rate limit indicator
+# ============================================
+
+- assertVisible:
+    id: "rate_limit_indicator"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/ios-coach-chat-05-rate-limit
+
+# Final assertions
+- assertVisible:
+    id: "coach_screen"
+- assertNotVisible:
+    id: "error_view"
+    optional: true

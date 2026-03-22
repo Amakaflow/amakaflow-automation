@@ -1,0 +1,144 @@
+# Android Notification Preferences Flow
+# Tests notification settings: toggle types, quiet hours
+#
+# Run: maestro test flows/android/notification-preferences.yaml
+
+appId: com.amakaflow.companion
+
+onFlowError:
+  - takeScreenshot: artifacts/screenshots/android-notification-preferences-error
+
+---
+
+- launchApp:
+    clearState: true
+    stopApp: true
+    arguments:
+      UITEST_MODE: "true"
+      UITEST_AUTH_SECRET: "${UITEST_AUTH_SECRET}"
+      UITEST_USER_ID: "${UITEST_USER_ID:-test-user-123}"
+      UITEST_USE_FIXTURES: "true"
+      UITEST_FIXTURES: "amrap_10min"
+      UITEST_SKIP_ONBOARDING: "true"
+
+# Dismiss Android system dialogs
+- waitForAnimationToEnd
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    text: "While using the app"
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      id: "home_screen"
+    timeout: 15000
+
+# ============================================
+# Navigate to Notification Settings
+# ============================================
+
+- tapOn:
+    id: "nav_more"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "more_screen"
+    timeout: 10000
+
+- tapOn:
+    text: "Settings"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "settings_screen"
+    timeout: 10000
+
+- scrollUntilVisible:
+    element:
+      text: "Notifications"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- tapOn:
+    text: "Notifications"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "notification_preferences_screen"
+    timeout: 10000
+
+- takeScreenshot: artifacts/screenshots/android-notification-preferences-01-overview
+
+# ============================================
+# Toggle notification types
+# ============================================
+
+- assertVisible:
+    id: "workout_reminders_toggle"
+
+- tapOn:
+    id: "workout_reminders_toggle"
+    retryTapIfNoChange: true
+
+- takeScreenshot: artifacts/screenshots/android-notification-preferences-02-toggle-reminders
+
+- assertVisible:
+    id: "sync_alerts_toggle"
+
+- tapOn:
+    id: "sync_alerts_toggle"
+    retryTapIfNoChange: true
+
+- takeScreenshot: artifacts/screenshots/android-notification-preferences-03-toggle-sync
+
+- assertVisible:
+    id: "coach_messages_toggle"
+    optional: true
+
+- tapOn:
+    id: "coach_messages_toggle"
+    optional: true
+    retryTapIfNoChange: true
+
+- takeScreenshot: artifacts/screenshots/android-notification-preferences-04-toggle-coach
+
+# ============================================
+# Verify quiet hours
+# ============================================
+
+- scrollUntilVisible:
+    element:
+      id: "quiet_hours_section"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- assertVisible:
+    id: "quiet_hours_section"
+
+- assertVisible:
+    id: "quiet_hours_toggle"
+
+- takeScreenshot: artifacts/screenshots/android-notification-preferences-05-quiet-hours
+
+# Tap quiet hours toggle
+- tapOn:
+    id: "quiet_hours_toggle"
+    retryTapIfNoChange: true
+
+- takeScreenshot: artifacts/screenshots/android-notification-preferences-06-quiet-hours-toggled
+
+# Go back
+- back
+- back
+
+# Final assertions
+- assertNotVisible:
+    id: "error_view"
+    optional: true

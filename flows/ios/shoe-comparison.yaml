@@ -1,0 +1,84 @@
+# iOS Shoe Comparison Flow
+# Tests shoe comparison: shoe cards, comparison chart
+#
+# Run: maestro test flows/ios/shoe-comparison.yaml
+
+appId: com.myamaka.AmakaFlowCompanion
+
+onFlowError:
+  - takeScreenshot: artifacts/screenshots/ios-shoe-comparison-error
+
+---
+
+- launchApp:
+    clearState: true
+    stopApp: true
+    arguments:
+      UITEST_MODE: "true"
+      UITEST_AUTH_SECRET: "${UITEST_AUTH_SECRET}"
+      UITEST_USER_ID: "${UITEST_USER_ID:-test-user-123}"
+      UITEST_USE_FIXTURES: "true"
+      UITEST_FIXTURES: "amrap_10min,strength_block_w1"
+      UITEST_SKIP_ONBOARDING: "true"
+      UITEST_SKIP_APPLE_WATCH: "true"
+
+- extendedWaitUntil:
+    visible:
+      id: "home_screen"
+    timeout: 15000
+
+# ============================================
+# Navigate to Shoe Comparison
+# ============================================
+
+- tapOn:
+    text: "More"
+    retryTapIfNoChange: true
+
+- tapOn:
+    text: "Shoes"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "shoe_comparison_screen"
+    timeout: 10000
+
+- takeScreenshot: artifacts/screenshots/ios-shoe-comparison-01-overview
+
+# ============================================
+# Verify shoe cards
+# ============================================
+
+- assertVisible:
+    id: "shoe_card_0"
+    optional: true
+
+- assertVisible:
+    id: "shoe_card_1"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/ios-shoe-comparison-02-shoe-cards
+
+# ============================================
+# Check comparison chart
+# ============================================
+
+- scrollUntilVisible:
+    element:
+      id: "comparison_chart"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- assertVisible:
+    id: "comparison_chart"
+
+- takeScreenshot: artifacts/screenshots/ios-shoe-comparison-03-comparison-chart
+
+# Final assertions
+- assertVisible:
+    id: "shoe_comparison_screen"
+- assertNotVisible:
+    id: "error_view"
+    optional: true

@@ -1,0 +1,109 @@
+# iOS Export Workout Flow
+# Tests workout export: format options (FIT, JSON, PDF, TCX), select format
+#
+# Run: maestro test flows/ios/export-workout.yaml
+
+appId: com.myamaka.AmakaFlowCompanion
+
+onFlowError:
+  - takeScreenshot: artifacts/screenshots/ios-export-workout-error
+
+---
+
+- launchApp:
+    clearState: true
+    stopApp: true
+    arguments:
+      UITEST_MODE: "true"
+      UITEST_AUTH_SECRET: "${UITEST_AUTH_SECRET}"
+      UITEST_USER_ID: "${UITEST_USER_ID:-test-user-123}"
+      UITEST_USE_FIXTURES: "true"
+      UITEST_FIXTURES: "strength_block_w1"
+      UITEST_SKIP_ONBOARDING: "true"
+      UITEST_SKIP_APPLE_WATCH: "true"
+
+- extendedWaitUntil:
+    visible:
+      id: "home_screen"
+    timeout: 15000
+
+# Navigate to workouts tab
+- tapOn:
+    id: "workouts_tab"
+    retryTapIfNoChange: true
+
+- assertVisible:
+    id: "workouts_screen"
+
+# ============================================
+# Open workout detail
+# ============================================
+
+- tapOn:
+    id: "workout_card_0"
+    retryTapIfNoChange: true
+
+- assertVisible:
+    id: "workout_detail_screen"
+
+- takeScreenshot: artifacts/screenshots/ios-export-workout-01-detail
+
+# ============================================
+# Tap export button
+# ============================================
+
+- tapOn:
+    id: "export_button"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "export_sheet"
+    timeout: 5000
+
+- takeScreenshot: artifacts/screenshots/ios-export-workout-02-export-sheet
+
+# ============================================
+# Verify format options
+# ============================================
+
+- assertVisible:
+    text: "FIT"
+
+- assertVisible:
+    text: "JSON"
+
+- assertVisible:
+    text: "PDF"
+
+- assertVisible:
+    text: "TCX"
+
+- takeScreenshot: artifacts/screenshots/ios-export-workout-03-format-options
+
+# ============================================
+# Select a format (FIT)
+# ============================================
+
+- tapOn:
+    text: "FIT"
+    retryTapIfNoChange: true
+
+- takeScreenshot: artifacts/screenshots/ios-export-workout-04-format-selected
+
+# Dismiss export sheet / share sheet
+- tapOn:
+    text: "Cancel"
+    optional: true
+- tapOn:
+    text: "Close"
+    optional: true
+- tapOn:
+    id: "xmark"
+    optional: true
+- waitForAnimationToEnd
+
+# Final assertions
+- assertNotVisible:
+    id: "error_view"
+    optional: true

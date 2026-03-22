@@ -1,0 +1,115 @@
+# Android Calendar Flow
+# Tests calendar tab: week view, readiness pills, session cards, generate week, conflict warnings
+#
+# Run: maestro test flows/android/calendar.yaml
+
+appId: com.amakaflow.companion
+
+onFlowError:
+  - takeScreenshot: artifacts/screenshots/android-calendar-error
+
+---
+
+- launchApp:
+    clearState: true
+    stopApp: true
+    arguments:
+      UITEST_MODE: "true"
+      UITEST_AUTH_SECRET: "${UITEST_AUTH_SECRET}"
+      UITEST_USER_ID: "${UITEST_USER_ID:-test-user-123}"
+      UITEST_USE_FIXTURES: "true"
+      UITEST_FIXTURES: "amrap_10min,strength_block_w1"
+      UITEST_SKIP_ONBOARDING: "true"
+
+# Dismiss Android system dialogs
+- waitForAnimationToEnd
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    text: "While using the app"
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      id: "home_screen"
+    timeout: 15000
+
+# Navigate to Calendar tab
+- tapOn:
+    id: "nav_calendar"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "calendar_screen"
+    timeout: 10000
+
+- takeScreenshot: artifacts/screenshots/android-calendar-01-week-view
+
+# ============================================
+# Verify week view elements
+# ============================================
+
+- assertVisible:
+    id: "week_view"
+
+# Check readiness pills (optional - depends on connected platforms)
+- assertVisible:
+    id: "readiness_pills"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/android-calendar-02-readiness-pills
+
+# ============================================
+# Verify session cards with source labels
+# ============================================
+
+- assertVisible:
+    id: "session_card_0"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/android-calendar-03-session-cards
+
+# ============================================
+# Tap "Generate my week"
+# ============================================
+
+- scrollUntilVisible:
+    element:
+      text: "Generate my week"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- tapOn:
+    text: "Generate my week"
+    retryTapIfNoChange: true
+
+# Wait for proposed plan to appear
+- extendedWaitUntil:
+    visible:
+      id: "proposed_plan_view"
+    timeout: 30000
+
+- takeScreenshot: artifacts/screenshots/android-calendar-04-proposed-plan
+
+# ============================================
+# Check conflict warnings (optional)
+# ============================================
+
+- assertVisible:
+    id: "conflict_warning"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/android-calendar-05-conflict-warnings
+
+# Dismiss proposed plan
+- back
+
+# Final assertions
+- assertVisible:
+    id: "calendar_screen"
+- assertNotVisible:
+    id: "error_view"
+    optional: true

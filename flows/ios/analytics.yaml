@@ -1,0 +1,111 @@
+# iOS Analytics Flow
+# Tests analytics tab: weekly charts, device distribution, session counts, streak
+#
+# Run: maestro test flows/ios/analytics.yaml
+
+appId: com.myamaka.AmakaFlowCompanion
+
+onFlowError:
+  - takeScreenshot: artifacts/screenshots/ios-analytics-error
+
+---
+
+- launchApp:
+    clearState: true
+    stopApp: true
+    arguments:
+      UITEST_MODE: "true"
+      UITEST_AUTH_SECRET: "${UITEST_AUTH_SECRET}"
+      UITEST_USER_ID: "${UITEST_USER_ID:-test-user-123}"
+      UITEST_USE_FIXTURES: "true"
+      UITEST_FIXTURES: "amrap_10min,strength_block_w1"
+      UITEST_SKIP_ONBOARDING: "true"
+      UITEST_SKIP_APPLE_WATCH: "true"
+
+- extendedWaitUntil:
+    visible:
+      id: "home_screen"
+    timeout: 15000
+
+# ============================================
+# Navigate to Analytics tab
+# ============================================
+
+- tapOn:
+    text: "More"
+    retryTapIfNoChange: true
+
+- tapOn:
+    text: "Analytics"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "analytics_screen"
+    timeout: 10000
+
+- takeScreenshot: artifacts/screenshots/ios-analytics-01-overview
+
+# ============================================
+# Verify weekly charts
+# ============================================
+
+- assertVisible:
+    id: "weekly_chart"
+
+- takeScreenshot: artifacts/screenshots/ios-analytics-02-weekly-chart
+
+# ============================================
+# Check device distribution
+# ============================================
+
+- scrollUntilVisible:
+    element:
+      id: "device_distribution_chart"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- assertVisible:
+    id: "device_distribution_chart"
+
+- takeScreenshot: artifacts/screenshots/ios-analytics-03-device-distribution
+
+# ============================================
+# Verify session counts
+# ============================================
+
+- scrollUntilVisible:
+    element:
+      id: "session_count_label"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- assertVisible:
+    id: "session_count_label"
+
+- takeScreenshot: artifacts/screenshots/ios-analytics-04-session-counts
+
+# ============================================
+# Verify streak
+# ============================================
+
+- scrollUntilVisible:
+    element:
+      id: "streak_label"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- assertVisible:
+    id: "streak_label"
+
+- takeScreenshot: artifacts/screenshots/ios-analytics-05-streak
+
+# Final assertions
+- assertVisible:
+    id: "analytics_screen"
+- assertNotVisible:
+    id: "error_view"
+    optional: true

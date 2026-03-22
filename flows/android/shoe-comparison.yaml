@@ -1,0 +1,98 @@
+# Android Shoe Comparison Flow
+# Tests shoe comparison: shoe cards, comparison chart
+#
+# Run: maestro test flows/android/shoe-comparison.yaml
+
+appId: com.amakaflow.companion
+
+onFlowError:
+  - takeScreenshot: artifacts/screenshots/android-shoe-comparison-error
+
+---
+
+- launchApp:
+    clearState: true
+    stopApp: true
+    arguments:
+      UITEST_MODE: "true"
+      UITEST_AUTH_SECRET: "${UITEST_AUTH_SECRET}"
+      UITEST_USER_ID: "${UITEST_USER_ID:-test-user-123}"
+      UITEST_USE_FIXTURES: "true"
+      UITEST_FIXTURES: "amrap_10min,strength_block_w1"
+      UITEST_SKIP_ONBOARDING: "true"
+
+# Dismiss Android system dialogs
+- waitForAnimationToEnd
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    text: "While using the app"
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      id: "home_screen"
+    timeout: 15000
+
+# ============================================
+# Navigate to Shoe Comparison via More tab
+# ============================================
+
+- tapOn:
+    id: "nav_more"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "more_screen"
+    timeout: 10000
+
+- tapOn:
+    text: "Shoes"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "shoe_comparison_screen"
+    timeout: 10000
+
+- takeScreenshot: artifacts/screenshots/android-shoe-comparison-01-overview
+
+# ============================================
+# Verify shoe cards
+# ============================================
+
+- assertVisible:
+    id: "shoe_card_0"
+    optional: true
+
+- assertVisible:
+    id: "shoe_card_1"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/android-shoe-comparison-02-shoe-cards
+
+# ============================================
+# Check comparison chart
+# ============================================
+
+- scrollUntilVisible:
+    element:
+      id: "comparison_chart"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- assertVisible:
+    id: "comparison_chart"
+
+- takeScreenshot: artifacts/screenshots/android-shoe-comparison-03-comparison-chart
+
+# Go back
+- back
+
+# Final assertions
+- assertNotVisible:
+    id: "error_view"
+    optional: true

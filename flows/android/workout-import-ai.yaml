@@ -1,0 +1,135 @@
+# Android AI Workout Import Flow
+# Tests AI import: paste text, parse, structured preview, confidence badges
+#
+# Run: maestro test flows/android/workout-import-ai.yaml
+
+appId: com.amakaflow.companion
+
+onFlowError:
+  - takeScreenshot: artifacts/screenshots/android-workout-import-ai-error
+
+---
+
+- launchApp:
+    clearState: true
+    stopApp: true
+    arguments:
+      UITEST_MODE: "true"
+      UITEST_AUTH_SECRET: "${UITEST_AUTH_SECRET}"
+      UITEST_USER_ID: "${UITEST_USER_ID:-test-user-123}"
+      UITEST_USE_FIXTURES: "true"
+      UITEST_FIXTURES: "amrap_10min"
+      UITEST_SKIP_ONBOARDING: "true"
+
+# Dismiss Android system dialogs
+- waitForAnimationToEnd
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    text: "While using the app"
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      id: "home_screen"
+    timeout: 15000
+
+# ============================================
+# Navigate to AI Import via More tab
+# ============================================
+
+- tapOn:
+    id: "nav_more"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "more_screen"
+    timeout: 10000
+
+- tapOn:
+    text: "Sources"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "sources_screen"
+    timeout: 10000
+
+- scrollUntilVisible:
+    element:
+      text: "AI Import"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- tapOn:
+    text: "AI Import"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "ai_import_screen"
+    timeout: 10000
+
+- takeScreenshot: artifacts/screenshots/android-workout-import-ai-01-screen
+
+# ============================================
+# Paste workout text
+# ============================================
+
+- tapOn:
+    id: "ai_import_text_editor"
+    retryTapIfNoChange: true
+
+- inputText: "Back Squat 5x5 @ 225lb\nRomanian Deadlift 3x10 @ 185lb\nLeg Press 4x12 @ 360lb\nWalking Lunges 3x20 steps"
+
+- takeScreenshot: artifacts/screenshots/android-workout-import-ai-02-text-entered
+
+# ============================================
+# Tap parse
+# ============================================
+
+- tapOn:
+    id: "parse_button"
+    retryTapIfNoChange: true
+
+# Wait for AI to process
+- extendedWaitUntil:
+    visible:
+      id: "parsed_preview"
+    timeout: 30000
+
+- takeScreenshot: artifacts/screenshots/android-workout-import-ai-03-parsed
+
+# ============================================
+# Verify structured preview
+# ============================================
+
+- assertVisible:
+    id: "parsed_preview"
+
+- assertVisible:
+    id: "parsed_exercise_0"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/android-workout-import-ai-04-structured-preview
+
+# ============================================
+# Check confidence badges
+# ============================================
+
+- assertVisible:
+    id: "confidence_badge_0"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/android-workout-import-ai-05-confidence
+
+# Go back without saving
+- back
+
+# Final assertions
+- assertNotVisible:
+    id: "error_view"
+    optional: true
