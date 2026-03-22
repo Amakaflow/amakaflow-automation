@@ -48,7 +48,6 @@ onFlowError:
 
 - assertVisible:
     id: "action_card_0"
-    optional: true
 
 - takeScreenshot: artifacts/screenshots/ios-activity-feed-02-action-cards
 
@@ -58,7 +57,6 @@ onFlowError:
 
 - tapOn:
     id: "action_approve_button_0"
-    optional: true
     retryTapIfNoChange: true
 
 - takeScreenshot: artifacts/screenshots/ios-activity-feed-03-approved
@@ -69,7 +67,6 @@ onFlowError:
 
 - assertVisible:
     id: "undo_button"
-    optional: true
 
 - takeScreenshot: artifacts/screenshots/ios-activity-feed-04-undo
 
@@ -79,7 +76,6 @@ onFlowError:
 
 - assertVisible:
     id: "action_status_icon_0"
-    optional: true
 
 - takeScreenshot: artifacts/screenshots/ios-activity-feed-05-status-icons
 
