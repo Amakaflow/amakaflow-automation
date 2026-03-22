@@ -1,0 +1,109 @@
+# iOS Fatigue Advisor Flow
+# Tests fatigue advisor: body map, question auto-fill, advice response sections
+#
+# Run: maestro test flows/ios/fatigue-advisor.yaml
+
+appId: com.myamaka.AmakaFlowCompanion
+
+onFlowError:
+  - takeScreenshot: artifacts/screenshots/ios-fatigue-advisor-error
+
+---
+
+- launchApp:
+    clearState: true
+    stopApp: true
+    arguments:
+      UITEST_MODE: "true"
+      UITEST_AUTH_SECRET: "${UITEST_AUTH_SECRET}"
+      UITEST_USER_ID: "${UITEST_USER_ID:-test-user-123}"
+      UITEST_USE_FIXTURES: "true"
+      UITEST_FIXTURES: "amrap_10min,strength_block_w1"
+      UITEST_SKIP_ONBOARDING: "true"
+      UITEST_SKIP_APPLE_WATCH: "true"
+
+- extendedWaitUntil:
+    visible:
+      id: "home_screen"
+    timeout: 15000
+
+# ============================================
+# Navigate to Fatigue Advisor
+# ============================================
+
+- tapOn:
+    text: "More"
+    retryTapIfNoChange: true
+
+- tapOn:
+    text: "Fatigue Advisor"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "fatigue_advisor_screen"
+    timeout: 10000
+
+- takeScreenshot: artifacts/screenshots/ios-fatigue-advisor-01-overview
+
+# ============================================
+# Tap body map muscle group
+# ============================================
+
+- assertVisible:
+    id: "body_map"
+
+- tapOn:
+    id: "body_map_quadriceps"
+    retryTapIfNoChange: true
+
+- takeScreenshot: artifacts/screenshots/ios-fatigue-advisor-02-muscle-selected
+
+# ============================================
+# Verify question auto-fills
+# ============================================
+
+- assertVisible:
+    id: "fatigue_question_field"
+
+- takeScreenshot: artifacts/screenshots/ios-fatigue-advisor-03-question-autofill
+
+# ============================================
+# Check advice response sections
+# ============================================
+
+# Submit the question (may require tapping send)
+- tapOn:
+    id: "fatigue_send_button"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "advice_response_section"
+    timeout: 30000
+
+- assertVisible:
+    id: "advice_response_section"
+
+- takeScreenshot: artifacts/screenshots/ios-fatigue-advisor-04-advice-response
+
+# Scroll to see full response
+- scrollUntilVisible:
+    element:
+      id: "advice_recommendations"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- assertVisible:
+    id: "advice_recommendations"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/ios-fatigue-advisor-05-recommendations
+
+# Final assertions
+- assertVisible:
+    id: "fatigue_advisor_screen"
+- assertNotVisible:
+    id: "error_view"
+    optional: true

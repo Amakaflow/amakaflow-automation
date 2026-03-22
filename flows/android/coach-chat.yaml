@@ -1,0 +1,107 @@
+# Android Coach Chat Flow
+# Tests coach tab: suggested prompts, tap prompt, verify response, source chips, rate limit
+#
+# Run: maestro test flows/android/coach-chat.yaml
+
+appId: com.amakaflow.companion
+
+onFlowError:
+  - takeScreenshot: artifacts/screenshots/android-coach-chat-error
+
+---
+
+- launchApp:
+    clearState: true
+    stopApp: true
+    arguments:
+      UITEST_MODE: "true"
+      UITEST_AUTH_SECRET: "${UITEST_AUTH_SECRET}"
+      UITEST_USER_ID: "${UITEST_USER_ID:-test-user-123}"
+      UITEST_USE_FIXTURES: "true"
+      UITEST_FIXTURES: "amrap_10min,strength_block_w1"
+      UITEST_SKIP_ONBOARDING: "true"
+
+# Dismiss Android system dialogs
+- waitForAnimationToEnd
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    text: "While using the app"
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      id: "home_screen"
+    timeout: 15000
+
+# Navigate to Coach via More tab
+- tapOn:
+    id: "nav_more"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "more_screen"
+    timeout: 10000
+
+- tapOn:
+    text: "Coach"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "coach_screen"
+    timeout: 10000
+
+- takeScreenshot: artifacts/screenshots/android-coach-chat-01-coach-screen
+
+# ============================================
+# Verify suggested prompts are visible
+# ============================================
+
+- assertVisible:
+    id: "suggested_prompts_section"
+
+- takeScreenshot: artifacts/screenshots/android-coach-chat-02-suggested-prompts
+
+# Tap a suggested prompt
+- tapOn:
+    id: "suggested_prompt_0"
+    retryTapIfNoChange: true
+
+# Wait for response to appear
+- extendedWaitUntil:
+    visible:
+      id: "coach_response_bubble"
+    timeout: 30000
+
+- takeScreenshot: artifacts/screenshots/android-coach-chat-03-response
+
+# ============================================
+# Verify source chips
+# ============================================
+
+- assertVisible:
+    id: "source_chips_section"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/android-coach-chat-04-source-chips
+
+# ============================================
+# Verify rate limit indicator
+# ============================================
+
+- assertVisible:
+    id: "rate_limit_indicator"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/android-coach-chat-05-rate-limit
+
+# Go back
+- back
+
+# Final assertions
+- assertNotVisible:
+    id: "error_view"
+    optional: true

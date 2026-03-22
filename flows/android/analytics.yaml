@@ -1,0 +1,125 @@
+# Android Analytics Flow
+# Tests analytics: weekly charts, device distribution, session counts, streak
+#
+# Run: maestro test flows/android/analytics.yaml
+
+appId: com.amakaflow.companion
+
+onFlowError:
+  - takeScreenshot: artifacts/screenshots/android-analytics-error
+
+---
+
+- launchApp:
+    clearState: true
+    stopApp: true
+    arguments:
+      UITEST_MODE: "true"
+      UITEST_AUTH_SECRET: "${UITEST_AUTH_SECRET}"
+      UITEST_USER_ID: "${UITEST_USER_ID:-test-user-123}"
+      UITEST_USE_FIXTURES: "true"
+      UITEST_FIXTURES: "amrap_10min,strength_block_w1"
+      UITEST_SKIP_ONBOARDING: "true"
+
+# Dismiss Android system dialogs
+- waitForAnimationToEnd
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    text: "While using the app"
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      id: "home_screen"
+    timeout: 15000
+
+# ============================================
+# Navigate to Analytics via More tab
+# ============================================
+
+- tapOn:
+    id: "nav_more"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "more_screen"
+    timeout: 10000
+
+- tapOn:
+    text: "Analytics"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "analytics_screen"
+    timeout: 10000
+
+- takeScreenshot: artifacts/screenshots/android-analytics-01-overview
+
+# ============================================
+# Verify weekly charts
+# ============================================
+
+- assertVisible:
+    id: "weekly_chart"
+
+- takeScreenshot: artifacts/screenshots/android-analytics-02-weekly-chart
+
+# ============================================
+# Check device distribution
+# ============================================
+
+- scrollUntilVisible:
+    element:
+      id: "device_distribution_chart"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- assertVisible:
+    id: "device_distribution_chart"
+
+- takeScreenshot: artifacts/screenshots/android-analytics-03-device-distribution
+
+# ============================================
+# Verify session counts
+# ============================================
+
+- scrollUntilVisible:
+    element:
+      id: "session_count_label"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- assertVisible:
+    id: "session_count_label"
+
+- takeScreenshot: artifacts/screenshots/android-analytics-04-session-counts
+
+# ============================================
+# Verify streak
+# ============================================
+
+- scrollUntilVisible:
+    element:
+      id: "streak_label"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- assertVisible:
+    id: "streak_label"
+
+- takeScreenshot: artifacts/screenshots/android-analytics-05-streak
+
+# Go back
+- back
+
+# Final assertions
+- assertNotVisible:
+    id: "error_view"
+    optional: true

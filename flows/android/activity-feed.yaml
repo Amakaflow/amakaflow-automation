@@ -1,0 +1,109 @@
+# Android Activity Feed Flow
+# Tests activity feed: action cards, approve pending action, undo button, action status icons
+#
+# Run: maestro test flows/android/activity-feed.yaml
+
+appId: com.amakaflow.companion
+
+onFlowError:
+  - takeScreenshot: artifacts/screenshots/android-activity-feed-error
+
+---
+
+- launchApp:
+    clearState: true
+    stopApp: true
+    arguments:
+      UITEST_MODE: "true"
+      UITEST_AUTH_SECRET: "${UITEST_AUTH_SECRET}"
+      UITEST_USER_ID: "${UITEST_USER_ID:-test-user-123}"
+      UITEST_USE_FIXTURES: "true"
+      UITEST_FIXTURES: "amrap_10min,strength_block_w1"
+      UITEST_SKIP_ONBOARDING: "true"
+
+# Dismiss Android system dialogs
+- waitForAnimationToEnd
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    text: "While using the app"
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      id: "home_screen"
+    timeout: 15000
+
+# ============================================
+# Navigate to Activity Feed via More tab
+# ============================================
+
+- tapOn:
+    id: "nav_more"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "more_screen"
+    timeout: 10000
+
+- tapOn:
+    text: "Activity Feed"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "activity_feed_screen"
+    timeout: 10000
+
+- takeScreenshot: artifacts/screenshots/android-activity-feed-01-feed
+
+# ============================================
+# Verify action cards
+# ============================================
+
+- assertVisible:
+    id: "action_card_0"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/android-activity-feed-02-action-cards
+
+# ============================================
+# Tap approve on pending action
+# ============================================
+
+- tapOn:
+    id: "action_approve_button_0"
+    optional: true
+    retryTapIfNoChange: true
+
+- takeScreenshot: artifacts/screenshots/android-activity-feed-03-approved
+
+# ============================================
+# Verify undo button appears after approval
+# ============================================
+
+- assertVisible:
+    id: "undo_button"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/android-activity-feed-04-undo
+
+# ============================================
+# Verify action status icons
+# ============================================
+
+- assertVisible:
+    id: "action_status_icon_0"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/android-activity-feed-05-status-icons
+
+# Go back
+- back
+
+# Final assertions
+- assertNotVisible:
+    id: "error_view"
+    optional: true

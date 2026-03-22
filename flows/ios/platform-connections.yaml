@@ -1,0 +1,118 @@
+# iOS Platform Connections Flow
+# Tests settings > connections: platform list, connect modal, sync button
+#
+# Run: maestro test flows/ios/platform-connections.yaml
+
+appId: com.myamaka.AmakaFlowCompanion
+
+onFlowError:
+  - takeScreenshot: artifacts/screenshots/ios-platform-connections-error
+
+---
+
+- launchApp:
+    clearState: true
+    stopApp: true
+    arguments:
+      UITEST_MODE: "true"
+      UITEST_AUTH_SECRET: "${UITEST_AUTH_SECRET}"
+      UITEST_USER_ID: "${UITEST_USER_ID:-test-user-123}"
+      UITEST_USE_FIXTURES: "true"
+      UITEST_FIXTURES: "amrap_10min"
+      UITEST_SKIP_ONBOARDING: "true"
+      UITEST_SKIP_APPLE_WATCH: "true"
+
+- extendedWaitUntil:
+    visible:
+      id: "home_screen"
+    timeout: 15000
+
+# ============================================
+# Navigate to Settings > Connections
+# ============================================
+
+- tapOn:
+    text: "More"
+    retryTapIfNoChange: true
+
+- tapOn:
+    text: "Settings"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "settings_screen"
+    timeout: 10000
+
+- scrollUntilVisible:
+    element:
+      text: "Connections"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- tapOn:
+    text: "Connections"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "connections_screen"
+    timeout: 10000
+
+- takeScreenshot: artifacts/screenshots/ios-platform-connections-01-list
+
+# ============================================
+# Verify platform list
+# ============================================
+
+- assertVisible:
+    id: "platform_list"
+
+- assertVisible:
+    id: "platform_row_0"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/ios-platform-connections-02-platforms
+
+# ============================================
+# Tap connect on disconnected platform
+# ============================================
+
+- tapOn:
+    id: "connect_button_0"
+    optional: true
+    retryTapIfNoChange: true
+
+# Verify connect modal opens (optional - depends on platform state)
+- assertVisible:
+    id: "connect_modal"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/ios-platform-connections-03-connect-modal
+
+# Dismiss modal
+- tapOn:
+    text: "Cancel"
+    optional: true
+- tapOn:
+    text: "Close"
+    optional: true
+- waitForAnimationToEnd
+
+# ============================================
+# Check sync button on connected platform
+# ============================================
+
+- assertVisible:
+    id: "sync_button_0"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/ios-platform-connections-04-sync-button
+
+# Final assertions
+- assertVisible:
+    id: "connections_screen"
+- assertNotVisible:
+    id: "error_view"
+    optional: true

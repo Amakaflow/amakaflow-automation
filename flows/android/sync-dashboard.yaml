@@ -1,0 +1,113 @@
+# Android Sync Dashboard Flow
+# Tests sync dashboard: platform status bars, pending decisions, resolve decision
+#
+# Run: maestro test flows/android/sync-dashboard.yaml
+
+appId: com.amakaflow.companion
+
+onFlowError:
+  - takeScreenshot: artifacts/screenshots/android-sync-dashboard-error
+
+---
+
+- launchApp:
+    clearState: true
+    stopApp: true
+    arguments:
+      UITEST_MODE: "true"
+      UITEST_AUTH_SECRET: "${UITEST_AUTH_SECRET}"
+      UITEST_USER_ID: "${UITEST_USER_ID:-test-user-123}"
+      UITEST_USE_FIXTURES: "true"
+      UITEST_FIXTURES: "amrap_10min,strength_block_w1"
+      UITEST_SKIP_ONBOARDING: "true"
+
+# Dismiss Android system dialogs
+- waitForAnimationToEnd
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    text: "While using the app"
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      id: "home_screen"
+    timeout: 15000
+
+# ============================================
+# Navigate to Sync Dashboard via More tab
+# ============================================
+
+- tapOn:
+    id: "nav_more"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "more_screen"
+    timeout: 10000
+
+- tapOn:
+    text: "Sync Dashboard"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "sync_dashboard_screen"
+    timeout: 10000
+
+- takeScreenshot: artifacts/screenshots/android-sync-dashboard-01-overview
+
+# ============================================
+# Verify platform status bars
+# ============================================
+
+- assertVisible:
+    id: "platform_status_section"
+
+- assertVisible:
+    id: "platform_status_bar_0"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/android-sync-dashboard-02-platform-status
+
+# ============================================
+# Check pending decisions
+# ============================================
+
+- scrollUntilVisible:
+    element:
+      id: "pending_decisions_section"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- assertVisible:
+    id: "pending_decisions_section"
+
+- takeScreenshot: artifacts/screenshots/android-sync-dashboard-03-pending-decisions
+
+# ============================================
+# Tap resolve on a decision (optional - depends on test data)
+# ============================================
+
+- tapOn:
+    id: "resolve_decision_button_0"
+    optional: true
+    retryTapIfNoChange: true
+
+- takeScreenshot: artifacts/screenshots/android-sync-dashboard-04-resolve
+
+# Dismiss any resolve dialog
+- tapOn:
+    text: "Cancel"
+    optional: true
+- back
+
+# Final assertions
+- assertVisible:
+    id: "sync_dashboard_screen"
+- assertNotVisible:
+    id: "error_view"
+    optional: true

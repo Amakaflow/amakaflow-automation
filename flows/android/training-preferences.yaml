@@ -1,0 +1,210 @@
+# Android Training Preferences Flow
+# Tests settings > training preferences: volume slider, hard days, run days, goal race
+#
+# Run: maestro test flows/android/training-preferences.yaml
+
+appId: com.amakaflow.companion
+
+onFlowError:
+  - takeScreenshot: artifacts/screenshots/android-training-preferences-error
+
+---
+
+- launchApp:
+    clearState: true
+    stopApp: true
+    arguments:
+      UITEST_MODE: "true"
+      UITEST_AUTH_SECRET: "${UITEST_AUTH_SECRET}"
+      UITEST_USER_ID: "${UITEST_USER_ID:-test-user-123}"
+      UITEST_USE_FIXTURES: "true"
+      UITEST_FIXTURES: "amrap_10min"
+      UITEST_SKIP_ONBOARDING: "true"
+
+# Dismiss Android system dialogs
+- waitForAnimationToEnd
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    text: "While using the app"
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      id: "home_screen"
+    timeout: 15000
+
+# ============================================
+# Navigate to Settings > Training Preferences
+# ============================================
+
+- tapOn:
+    id: "nav_more"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "more_screen"
+    timeout: 10000
+
+- tapOn:
+    text: "Settings"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "settings_screen"
+    timeout: 10000
+
+- scrollUntilVisible:
+    element:
+      text: "Training Preferences"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- tapOn:
+    text: "Training Preferences"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "training_preferences_screen"
+    timeout: 10000
+
+- takeScreenshot: artifacts/screenshots/android-training-preferences-01-overview
+
+# ============================================
+# Adjust volume slider
+# ============================================
+
+- assertVisible:
+    id: "volume_slider"
+
+- tapOn:
+    id: "volume_slider"
+    retryTapIfNoChange: true
+
+- takeScreenshot: artifacts/screenshots/android-training-preferences-02-volume
+
+# ============================================
+# Select hard days
+# ============================================
+
+- scrollUntilVisible:
+    element:
+      id: "hard_days_section"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- assertVisible:
+    id: "hard_days_section"
+
+- tapOn:
+    id: "hard_day_tuesday"
+    optional: true
+    retryTapIfNoChange: true
+
+- tapOn:
+    id: "hard_day_thursday"
+    optional: true
+    retryTapIfNoChange: true
+
+- takeScreenshot: artifacts/screenshots/android-training-preferences-03-hard-days
+
+# ============================================
+# Toggle run days
+# ============================================
+
+- scrollUntilVisible:
+    element:
+      id: "run_days_section"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- assertVisible:
+    id: "run_days_section"
+
+- tapOn:
+    id: "run_day_monday"
+    optional: true
+    retryTapIfNoChange: true
+
+- takeScreenshot: artifacts/screenshots/android-training-preferences-04-run-days
+
+# ============================================
+# Set goal race
+# ============================================
+
+- scrollUntilVisible:
+    element:
+      id: "goal_race_section"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- assertVisible:
+    id: "goal_race_section"
+
+- tapOn:
+    id: "goal_race_picker"
+    optional: true
+    retryTapIfNoChange: true
+
+- takeScreenshot: artifacts/screenshots/android-training-preferences-05-goal-race
+
+# Dismiss picker if opened
+- tapOn:
+    text: "OK"
+    optional: true
+- back
+
+# ============================================
+# Verify changes persist (navigate away and back)
+# ============================================
+
+- tapOn:
+    id: "nav_more"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "more_screen"
+    timeout: 10000
+
+- tapOn:
+    text: "Settings"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "settings_screen"
+    timeout: 10000
+
+- scrollUntilVisible:
+    element:
+      text: "Training Preferences"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- tapOn:
+    text: "Training Preferences"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "training_preferences_screen"
+    timeout: 10000
+
+- takeScreenshot: artifacts/screenshots/android-training-preferences-06-persisted
+
+# Final assertions
+- assertVisible:
+    id: "training_preferences_screen"
+- assertNotVisible:
+    id: "error_view"
+    optional: true

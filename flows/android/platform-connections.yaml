@@ -1,0 +1,130 @@
+# Android Platform Connections Flow
+# Tests settings > connections: platform list, connect modal, sync button
+#
+# Run: maestro test flows/android/platform-connections.yaml
+
+appId: com.amakaflow.companion
+
+onFlowError:
+  - takeScreenshot: artifacts/screenshots/android-platform-connections-error
+
+---
+
+- launchApp:
+    clearState: true
+    stopApp: true
+    arguments:
+      UITEST_MODE: "true"
+      UITEST_AUTH_SECRET: "${UITEST_AUTH_SECRET}"
+      UITEST_USER_ID: "${UITEST_USER_ID:-test-user-123}"
+      UITEST_USE_FIXTURES: "true"
+      UITEST_FIXTURES: "amrap_10min"
+      UITEST_SKIP_ONBOARDING: "true"
+
+# Dismiss Android system dialogs
+- waitForAnimationToEnd
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    text: "While using the app"
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      id: "home_screen"
+    timeout: 15000
+
+# ============================================
+# Navigate to Settings > Connections
+# ============================================
+
+- tapOn:
+    id: "nav_more"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "more_screen"
+    timeout: 10000
+
+- tapOn:
+    text: "Settings"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "settings_screen"
+    timeout: 10000
+
+- scrollUntilVisible:
+    element:
+      text: "Connections"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- tapOn:
+    text: "Connections"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "connections_screen"
+    timeout: 10000
+
+- takeScreenshot: artifacts/screenshots/android-platform-connections-01-list
+
+# ============================================
+# Verify platform list
+# ============================================
+
+- assertVisible:
+    id: "platform_list"
+
+- assertVisible:
+    id: "platform_row_0"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/android-platform-connections-02-platforms
+
+# ============================================
+# Tap connect on disconnected platform
+# ============================================
+
+- tapOn:
+    id: "connect_button_0"
+    optional: true
+    retryTapIfNoChange: true
+
+# Verify connect modal opens (optional - depends on platform state)
+- assertVisible:
+    id: "connect_modal"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/android-platform-connections-03-connect-modal
+
+# Dismiss modal
+- tapOn:
+    text: "Cancel"
+    optional: true
+- back
+
+# ============================================
+# Check sync button on connected platform
+# ============================================
+
+- assertVisible:
+    id: "sync_button_0"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/android-platform-connections-04-sync-button
+
+# Go back
+- back
+- back
+
+# Final assertions
+- assertNotVisible:
+    id: "error_view"
+    optional: true

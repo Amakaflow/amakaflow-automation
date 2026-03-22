@@ -1,0 +1,91 @@
+# iOS Activity Feed Flow
+# Tests activity feed: action cards, approve pending action, undo button, action status icons
+#
+# Run: maestro test flows/ios/activity-feed.yaml
+
+appId: com.myamaka.AmakaFlowCompanion
+
+onFlowError:
+  - takeScreenshot: artifacts/screenshots/ios-activity-feed-error
+
+---
+
+- launchApp:
+    clearState: true
+    stopApp: true
+    arguments:
+      UITEST_MODE: "true"
+      UITEST_AUTH_SECRET: "${UITEST_AUTH_SECRET}"
+      UITEST_USER_ID: "${UITEST_USER_ID:-test-user-123}"
+      UITEST_USE_FIXTURES: "true"
+      UITEST_FIXTURES: "amrap_10min,strength_block_w1"
+      UITEST_SKIP_ONBOARDING: "true"
+      UITEST_SKIP_APPLE_WATCH: "true"
+
+- extendedWaitUntil:
+    visible:
+      id: "home_screen"
+    timeout: 15000
+
+# ============================================
+# Navigate to Activity Feed
+# ============================================
+
+- tapOn:
+    id: "activity_feed_tab"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "activity_feed_screen"
+    timeout: 10000
+
+- takeScreenshot: artifacts/screenshots/ios-activity-feed-01-feed
+
+# ============================================
+# Verify action cards
+# ============================================
+
+- assertVisible:
+    id: "action_card_0"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/ios-activity-feed-02-action-cards
+
+# ============================================
+# Tap approve on pending action
+# ============================================
+
+- tapOn:
+    id: "action_approve_button_0"
+    optional: true
+    retryTapIfNoChange: true
+
+- takeScreenshot: artifacts/screenshots/ios-activity-feed-03-approved
+
+# ============================================
+# Verify undo button appears after approval
+# ============================================
+
+- assertVisible:
+    id: "undo_button"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/ios-activity-feed-04-undo
+
+# ============================================
+# Verify action status icons
+# ============================================
+
+- assertVisible:
+    id: "action_status_icon_0"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/ios-activity-feed-05-status-icons
+
+# Final assertions
+- assertVisible:
+    id: "activity_feed_screen"
+- assertNotVisible:
+    id: "error_view"
+    optional: true

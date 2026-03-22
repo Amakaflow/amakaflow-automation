@@ -1,0 +1,103 @@
+# iOS Sync Dashboard Flow
+# Tests sync dashboard: platform status bars, pending decisions, resolve decision
+#
+# Run: maestro test flows/ios/sync-dashboard.yaml
+
+appId: com.myamaka.AmakaFlowCompanion
+
+onFlowError:
+  - takeScreenshot: artifacts/screenshots/ios-sync-dashboard-error
+
+---
+
+- launchApp:
+    clearState: true
+    stopApp: true
+    arguments:
+      UITEST_MODE: "true"
+      UITEST_AUTH_SECRET: "${UITEST_AUTH_SECRET}"
+      UITEST_USER_ID: "${UITEST_USER_ID:-test-user-123}"
+      UITEST_USE_FIXTURES: "true"
+      UITEST_FIXTURES: "amrap_10min,strength_block_w1"
+      UITEST_SKIP_ONBOARDING: "true"
+      UITEST_SKIP_APPLE_WATCH: "true"
+
+- extendedWaitUntil:
+    visible:
+      id: "home_screen"
+    timeout: 15000
+
+# ============================================
+# Navigate to Sync Dashboard
+# ============================================
+
+- tapOn:
+    text: "More"
+    retryTapIfNoChange: true
+
+- tapOn:
+    text: "Sync Dashboard"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "sync_dashboard_screen"
+    timeout: 10000
+
+- takeScreenshot: artifacts/screenshots/ios-sync-dashboard-01-overview
+
+# ============================================
+# Verify platform status bars
+# ============================================
+
+- assertVisible:
+    id: "platform_status_section"
+
+- assertVisible:
+    id: "platform_status_bar_0"
+    optional: true
+
+- takeScreenshot: artifacts/screenshots/ios-sync-dashboard-02-platform-status
+
+# ============================================
+# Check pending decisions
+# ============================================
+
+- scrollUntilVisible:
+    element:
+      id: "pending_decisions_section"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- assertVisible:
+    id: "pending_decisions_section"
+
+- takeScreenshot: artifacts/screenshots/ios-sync-dashboard-03-pending-decisions
+
+# ============================================
+# Tap resolve on a decision (optional - depends on test data)
+# ============================================
+
+- tapOn:
+    id: "resolve_decision_button_0"
+    optional: true
+    retryTapIfNoChange: true
+
+- takeScreenshot: artifacts/screenshots/ios-sync-dashboard-04-resolve
+
+# Dismiss any resolve sheet
+- tapOn:
+    text: "Done"
+    optional: true
+- tapOn:
+    text: "Cancel"
+    optional: true
+- waitForAnimationToEnd
+
+# Final assertions
+- assertVisible:
+    id: "sync_dashboard_screen"
+- assertNotVisible:
+    id: "error_view"
+    optional: true
