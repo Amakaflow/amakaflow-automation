@@ -202,6 +202,41 @@ onFlowError:
 
 - takeScreenshot: artifacts/screenshots/android-training-preferences-06-persisted
 
+# Verify previously selected values persisted
+- scrollUntilVisible:
+    element:
+      id: "hard_days_section"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- assertVisible:
+    id: "hard_day_tuesday"
+- assertVisible:
+    id: "hard_day_thursday"
+
+- scrollUntilVisible:
+    element:
+      id: "run_days_section"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- assertVisible:
+    id: "run_day_monday"
+
+- scrollUntilVisible:
+    element:
+      id: "goal_race_section"
+    direction: DOWN
+    timeout: 10000
+    speed: 25
+
+- assertVisible:
+    id: "goal_race_section"
+
+- takeScreenshot: artifacts/screenshots/android-training-preferences-07-verified-persisted
+
 # Final assertions
 - assertVisible:
     id: "training_preferences_screen"

@@ -106,15 +106,13 @@ env:
 # ============================================
 
 # At this point we should be on home screen (via bypass or login)
-# If neither auth method worked, we may still be on login screen
+# This MUST pass — if auth didn't work, the test should fail
 - assertVisible:
     id: "home_screen"
-    optional: true
 
 # Verify user is authenticated (profile button visible)
 - assertVisible:
     id: "user_profile_button"
-    optional: true
 
 - takeScreenshot: artifacts/screenshots/ios-auth-05-complete
 
