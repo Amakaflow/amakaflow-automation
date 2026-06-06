@@ -1,0 +1,98 @@
+# iOS Coach session restore — AMA-2123
+# Verifies coach conversation survives tab switch (hoisted session store).
+#
+# Run: maestro test flows/ios/coach-session-restore.yaml
+#
+# Auth: AMA-1620 removed UITEST_AUTH_SECRET. Use UITEST_CLERK_TEST_SESSION
+# (AMA-1843 mock bypass). Maestro 2.1 passes launchApp.arguments as
+# UserDefaults keys — UITestEnvironment bridges those for the app.
+
+appId: com.myamaka.AmakaFlowCompanion
+
+onFlowError:
+  - takeScreenshot: artifacts/screenshots/ios-coach-session-restore-error
+
+---
+
+- launchApp:
+    clearState: true
+    stopApp: true
+    arguments:
+      UITEST_MODE: "true"
+      UITEST_CLERK_TEST_SESSION: "user_id=user_ama2123,email=ama2123@example.test,name=AMA2123"
+      UITEST_USE_FIXTURES: "true"
+      UITEST_FIXTURES: "amrap_10min,strength_block_w1"
+      UITEST_SKIP_ONBOARDING: "true"
+      UITEST_SKIP_APPLE_WATCH: "true"
+
+# Post-signin cards (Nutrition Awareness, etc.) can appear even with UITEST_SKIP_ONBOARDING.
+- repeat:
+    times: 6
+    commands:
+      - runFlow:
+          when:
+            visible: "Not now"
+          commands:
+            - tapOn: "Not now"
+            - waitForAnimationToEnd:
+                timeout: 3000
+      - runFlow:
+          when:
+            visible: "Skip"
+          commands:
+            - tapOn: "Skip"
+            - waitForAnimationToEnd:
+                timeout: 3000
+
+- extendedWaitUntil:
+    visible:
+      id: "af_tabbar"
+    timeout: 30000
+
+- extendedWaitUntil:
+    visible:
+      id: "home_screen"
+    timeout: 15000
+
+- tapOn:
+    text: "Coach"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "coach_screen"
+    timeout: 10000
+
+- tapOn:
+    id: "af_coach_input"
+- inputText: "Remember this test message for restore"
+- tapOn:
+    id: "af_coach_send"
+
+- extendedWaitUntil:
+    visible: "Remember this test message for restore"
+    timeout: 30000
+
+- takeScreenshot: artifacts/screenshots/ios-coach-session-restore-01-after-send
+
+- tapOn:
+    text: "Home"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "home_screen"
+    timeout: 10000
+
+- tapOn:
+    text: "Coach"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "coach_screen"
+    timeout: 10000
+
+- assertVisible: "Remember this test message for restore"
+
+- takeScreenshot: artifacts/screenshots/ios-coach-session-restore-02-after-tab-return
